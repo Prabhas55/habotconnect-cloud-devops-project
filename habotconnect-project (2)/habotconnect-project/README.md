@@ -1,8 +1,9 @@
 # HabotConnect Hiring Project — Junior Cloud & DevOps Engineer (GCP / Django / React)
 
 **Full Name:** Prabhas Nalajala
+
 **Email:** nalajaprabhas@gmail.com
-**Phone:** 7569327143
+
 **Submission Date:** 3 August 2026
 
 ---
