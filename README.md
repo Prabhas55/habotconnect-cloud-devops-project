@@ -13,9 +13,7 @@
 ```
 habotconnect-project/
 ├── README.md                          # this file
-├── HabotConnect_Hiring_Project.pptx   # the submitted deck
-├── .github/
-│   └── workflows/
+├── workflows/
 │       └── build-gate.yml             # Task 2: Poka-Yoke fail-closed CI/CD gate
 ├── terraform/                         # Task 1: IaC
 │   ├── main.tf                        # D0 GCS bucket + D1 BigQuery dataset, IAM, RLS
