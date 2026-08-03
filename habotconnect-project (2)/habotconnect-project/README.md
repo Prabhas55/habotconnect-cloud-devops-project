@@ -67,11 +67,4 @@ cd terraform && terraform init && terraform validate
 - BigQuery Row-Level Security uses the native `google_bigquery_row_access_policy` resource (Terraform google provider ≥ 5.x) rather than authorized views, since it composes more cleanly with IAM.
 - Student age range (3-18) was inferred from the LSA platform's target audience (children with learning difficulties) — adjust if the real business rule differs.
 
-## Submission Checklist
 
-- [ ] Replace name/email/phone placeholders above
-- [ ] Build the 15-slide deck from `SLIDE_OUTLINE.md`
-- [ ] Add links to this folder (or a repo) inside the slides
-- [ ] Confirm every worksheet/spreadsheet used has "Wrap Text" enabled
-- [ ] Re-read for slang/abbreviations — use full forms only
-- [ ] Submit via the Google Form before **3 August 2026**
