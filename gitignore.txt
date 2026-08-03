@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+!terraform.tfvars.example
+.env
+*.log
+.DS_Store

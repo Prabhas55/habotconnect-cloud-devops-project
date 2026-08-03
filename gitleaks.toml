@@ -1,0 +1,19 @@
+title = "HabotConnect Secret Scan Rules"
+
+[extend]
+useDefault = true
+
+# Extra rule tuned to the scenario in the brief: raw API credentials
+# left in application code (e.g. GCP API keys, DB connection strings).
+[[rules]]
+id = "hardcoded-api-key-generic"
+description = "Generic hardcoded API key / secret assignment"
+regex = '''(?i)(api[_-]?key|secret|token|password)\s*[:=]\s*["'][A-Za-z0-9_\-]{16,}["']'''
+tags = ["key", "generic"]
+
+[allowlist]
+description = "Ignore test fixtures explicitly marked as fake"
+paths = [
+  '''.*fixtures/.*''',
+  '''.*/tests/.*''',
+]
