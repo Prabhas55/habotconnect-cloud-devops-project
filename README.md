@@ -1,8 +1,9 @@
 # HabotConnect Hiring Project — Junior Cloud & DevOps Engineer (GCP / Django / React)
 
 **Full Name:** Prabhas Nalajala
+
 **Email:** nalajaprabhas@gmail.com
-**Phone:** 7569327143
+
 **Submission Date:** 3 August 2026
 
 ---
@@ -12,10 +13,7 @@
 ```
 habotconnect-project/
 ├── README.md                          # this file
-├── SLIDE_OUTLINE.md                   # 15-slide presentation plan
 ├── HabotConnect_Hiring_Project.pptx   # the submitted deck
-├── gitignore.txt                      # rename to .gitignore after cloning/pushing
-├── gitleaks.toml                      # secret-scan rules (Task 2)
 ├── .github/
 │   └── workflows/
 │       └── build-gate.yml             # Task 2: Poka-Yoke fail-closed CI/CD gate
@@ -65,12 +63,3 @@ cd terraform && terraform init && terraform validate
 - `backend/` and `frontend/` directory names in the CI/CD workflow are assumed based on the JD's Django + React stack; adjust paths to match the real repo structure.
 - BigQuery Row-Level Security uses the native `google_bigquery_row_access_policy` resource (Terraform google provider ≥ 5.x) rather than authorized views, since it composes more cleanly with IAM.
 - Student age range (3-18) was inferred from the LSA platform's target audience (children with learning difficulties) — adjust if the real business rule differs.
-
-## Submission Checklist
-
-- [ ] Replace name/email/phone placeholders above
-- [ ] Build the 15-slide deck from `SLIDE_OUTLINE.md`
-- [ ] Add links to this folder (or a repo) inside the slides
-- [ ] Confirm every worksheet/spreadsheet used has "Wrap Text" enabled
-- [ ] Re-read for slang/abbreviations — use full forms only
-- [ ] Submit via the Google Form before **3 August 2026**
