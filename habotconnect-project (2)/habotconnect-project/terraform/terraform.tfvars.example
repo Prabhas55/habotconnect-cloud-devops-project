@@ -1,0 +1,13 @@
+# Copy this file to terraform.tfvars and fill in real values.
+# terraform.tfvars itself is gitignored — never commit real project IDs,
+# service account emails, or credentials.
+
+project_id = "habotconnect-staging-example"
+region     = "asia-south1"
+environment = "staging"
+
+ingestion_service_account = "ingestion-sa@habotconnect-staging-example.iam.gserviceaccount.com"
+etl_service_account       = "etl-sa@habotconnect-staging-example.iam.gserviceaccount.com"
+
+data_platform_admin_email = "data-admin@example.com"
+analytics_reader_email    = "analytics-reader@example.com"
