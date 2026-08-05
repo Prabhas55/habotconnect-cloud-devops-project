@@ -88,4 +88,4 @@ jobs:
 
       - name: Verify Docker Image
         run: |
-          docker images
+          docker images 
