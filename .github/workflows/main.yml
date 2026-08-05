@@ -74,7 +74,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Verify Dockerfile
+      - name: Verify Project Structure
         run: |
           ls -la
           ls -la django
@@ -86,6 +86,36 @@ jobs:
             -t habotconnect-backend:latest \
             ./django
 
-      - name: Verify Docker Image
+  image-info:
+    name: Verify and Upload Docker Image
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image Again
         run: |
-          docker images 
+          docker build \
+            -t habotconnect-backend:${{ github.sha }} \
+            -t habotconnect-backend:latest \
+            ./django
+
+      - name: List Docker Images
+        run: |
+          docker images
+
+      - name: Inspect Docker Image
+        run: |
+          docker image inspect habotconnect-backend:${{ github.sha }}
+
+      - name: Save Docker Image
+        run: |
+          docker save habotconnect-backend:${{ github.sha }} -o habotconnect-backend.tar
+
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: habotconnect-backend-image
+          path: habotconnect-backend.tar
