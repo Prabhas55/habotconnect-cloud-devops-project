@@ -10,6 +10,9 @@ on:
       - main
       - staging
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Lint & Format Gate
@@ -28,8 +31,7 @@ jobs:
       - name: Install Linting Tools
         run: |
           python -m pip install --upgrade pip
-          pip install flake8
-          pip install black==26.5.1
+          pip install flake8 black==26.5.1
 
       - name: Run Flake8
         run: |
@@ -49,18 +51,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITLEAKS_ENABLE_COMMENTS: "false"
-        with:
-          config-path: gitleaks.toml
-
-      - name: Fail if Secrets Found
-        if: failure()
+      - name: Install Gitleaks
         run: |
-          echo "::error::Security scan failed. Secrets detected."
-          exit 1
+          wget -q https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_linux_x64.tar.gz
+          tar -xzf gitleaks_linux_x64.tar.gz
+          sudo mv gitleaks /usr/local/bin/
+
+      - name: Run Gitleaks
+        run: |
+          gitleaks detect \
+            --source . \
+            --config gitleaks.toml \
+            --verbose
 
   build:
     name: Build Docker Image
@@ -86,36 +88,43 @@ jobs:
             -t habotconnect-backend:latest \
             ./django
 
-  image-info:
-    name: Verify and Upload Docker Image
+      - name: List Docker Images
+        run: docker images
+
+      - name: Save Docker Image
+        run: |
+          docker save \
+            habotconnect-backend:${{ github.sha }} \
+            -o habotconnect-backend.tar
+
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: habotconnect-backend.tar
+
+  verify-image:
+    name: Verify Docker Artifact
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
 
-      - name: Build Docker Image Again
+      - name: Load Docker Image
         run: |
-          docker build \
-            -t habotconnect-backend:${{ github.sha }} \
-            -t habotconnect-backend:latest \
-            ./django
+          docker load -i habotconnect-backend.tar
 
       - name: List Docker Images
-        run: |
-          docker images
+        run: docker images
 
       - name: Inspect Docker Image
         run: |
           docker image inspect habotconnect-backend:${{ github.sha }}
 
-      - name: Save Docker Image
+      - name: Verify Image Exists
         run: |
-          docker save habotconnect-backend:${{ github.sha }} -o habotconnect-backend.tar
-
-      - name: Upload Docker Image Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: habotconnect-backend-image
-          path: habotconnect-backend.tar
+          docker image ls | grep habotconnect-backend
