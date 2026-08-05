@@ -30,7 +30,7 @@ jobs:
         run: flake8 django/ --max-line-length=100
 
       - name: Run black --check (formatting gate)
-        run: black --check backend/
+        run: black --check django/
 
       - name: Set up Node
         uses: actions/setup-node@v4
