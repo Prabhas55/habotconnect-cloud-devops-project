@@ -27,7 +27,7 @@ jobs:
         run: pip install flake8 black
 
       - name: Run flake8 (any violation fails the job)
-        run: flake8 backend/ --max-line-length=100
+        run: flake8 django/ --max-line-length=100
 
       - name: Run black --check (formatting gate)
         run: black --check backend/
