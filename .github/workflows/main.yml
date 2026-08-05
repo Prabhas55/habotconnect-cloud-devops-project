@@ -1,0 +1,102 @@
+name: Poka-Yoke Build Gate
+
+# Fail-closed design: build and deploy jobs declare `needs:` on the
+# lint and secret-scan jobs. If either fails, GitHub Actions never
+# runs the downstream jobs — there is no path from a failing gate to
+# a deployed artifact. Nothing is skipped or soft-passed.
+
+on:
+  pull_request:
+    branches: [main, staging]
+  push:
+    branches: [main, staging]
+
+jobs:
+  lint:
+    name: Lint & Format Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python lint tools
+        run: pip install flake8 black
+
+      - name: Run flake8 (any violation fails the job)
+        run: flake8 django/ --max-line-length=100
+
+      - name: Run black --check (formatting gate)
+        run: black --check django/
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install JS dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run ESLint (zero warnings tolerated)
+        working-directory: frontend
+        run: npx eslint . --max-warnings=0
+
+  secret-scan:
+    name: Secret Scan Gate (Fail-Closed)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_ENABLE_COMMENTS: "false"
+        with:
+          config-path: gitleaks.toml
+
+      - name: Report and halt on detection
+        if: failure()
+        run: |
+          echo "::error::SECURITY GATE FAILED — raw credentials detected in commit."
+          echo "Build halted. No image or bundle will be produced."
+          exit 1
+
+  build:
+    name: Build (only if lint + secret-scan both pass)
+    needs: [lint, secret-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t habotconnect-backend:${{ github.sha }} ./backend
+
+      - name: Build frontend bundle
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+  deploy:
+    name: Deploy to GCP App Engine
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.DEPLOY_SA_EMAIL }}
+
+      - name: Deploy to App Engine
+        run: gcloud app deploy --quiet
