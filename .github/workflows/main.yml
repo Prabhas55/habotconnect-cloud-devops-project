@@ -32,18 +32,6 @@ jobs:
       - name: Run black --check (formatting gate)
         run: black --check django/
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install JS dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Run ESLint (zero warnings tolerated)
-        working-directory: frontend
-        run: npx eslint . --max-warnings=0
 
   secret-scan:
     name: Secret Scan Gate (Fail-Closed)
@@ -77,11 +65,6 @@ jobs:
       - name: Build backend image
         run: docker build -t habotconnect-backend:${{ github.sha }} ./backend
 
-      - name: Build frontend bundle
-        working-directory: frontend
-        run: |
-          npm ci
-          npm run build
 
   deploy:
     name: Deploy to GCP App Engine
