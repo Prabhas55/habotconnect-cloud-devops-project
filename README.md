@@ -14,7 +14,7 @@
 habotconnect-project/
 ├── README.md                          # this file
 ├── workflows/
-│       └── build-gate.yml             # Task 2: Poka-Yoke fail-closed CI/CD gate
+│       └── main.yml             # Task 2: Poka-Yoke fail-closed CI/CD gate
 ├── terraform/                         # Task 1: IaC
 │   ├── main.tf                        # D0 GCS bucket + D1 BigQuery dataset, IAM, RLS
 │   ├── variables.tf
@@ -24,6 +24,8 @@ habotconnect-project/
     ├── dcyn.py                        # strict Yes/No validation library
     ├── models.py                      # StudentOnboarding model
     └── serializers.py                 # DRF serializer + DCYNField + exact limits
+    └── requirements.txt
+    └── Dockerfile
 ```
 
 **Note on hidden files:** `.github/workflows/` must keep its leading dot — GitHub Actions only detects workflows at that exact path. `gitignore.txt` and `gitleaks.toml` were kept dot-free here so they're visible in any file browser; rename `gitignore.txt` to `.gitignore` once you've cloned this into a real Git repo (Git ignores dot-prefixed files the same way regardless of what your OS file explorer shows).
