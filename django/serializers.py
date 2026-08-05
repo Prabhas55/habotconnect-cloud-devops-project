@@ -68,8 +68,10 @@ class StudentOnboardingSerializer(serializers.ModelSerializer):
 
     def validate_date_of_birth(self, value):
         today = date.today()
-        age = today.year - value.year - (
-            (today.month, today.day) < (value.month, value.day)
+        age = (
+            today.year
+            - value.year
+            - ((today.month, today.day) < (value.month, value.day))
         )
         if not (MIN_STUDENT_AGE <= age <= MAX_STUDENT_AGE):
             raise serializers.ValidationError(
