@@ -41,22 +41,23 @@ jobs:
         run: |
           black --check django/
 
- secret-scan:
-  name: Secret Scan Gate
-  runs-on: ubuntu-latest
+  secret-scan:
+    name: Secret Scan Gate
+    runs-on: ubuntu-latest
 
-  steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Run Gitleaks
-      uses: gitleaks/gitleaks-action@v2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GITLEAKS_ENABLE_COMMENTS: "false"
-        GITLEAKS_CONFIG: gitleaks.toml
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_CONFIG: gitleaks.toml
+
   build:
     name: Build Docker Image
     needs:
@@ -71,7 +72,10 @@ jobs:
 
       - name: Verify Project Structure
         run: |
+          echo "Repository Contents:"
           ls -la
+          echo ""
+          echo "Django Directory:"
           ls -la django
 
       - name: Build Docker Image
@@ -82,7 +86,8 @@ jobs:
             ./django
 
       - name: List Docker Images
-        run: docker images
+        run: |
+          docker images
 
       - name: Save Docker Image
         run: |
@@ -97,7 +102,7 @@ jobs:
           path: habotconnect-backend.tar
 
   verify-image:
-    name: Verify Docker Artifact
+    name: Verify Docker Image
     needs: build
     runs-on: ubuntu-latest
 
@@ -112,7 +117,8 @@ jobs:
           docker load -i habotconnect-backend.tar
 
       - name: List Docker Images
-        run: docker images
+        run: |
+          docker images
 
       - name: Inspect Docker Image
         run: |
@@ -121,3 +127,7 @@ jobs:
       - name: Verify Image Exists
         run: |
           docker image ls | grep habotconnect-backend
+
+      - name: Success Message
+        run: |
+          echo "Docker image verification completed successfully!"
