@@ -63,7 +63,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build backend image
-        run: docker build -t habotconnect-backend:${{ github.sha }} ./backend
+        run: docker build -t habotconnect-backend:${{ github.sha }} ./django
 
 
   deploy:
