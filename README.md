@@ -19,7 +19,7 @@ habotconnect-project/
 │   ├── main.tf                        # D0 GCS bucket + D1 BigQuery dataset, IAM, RLS
 │   ├── variables.tf
 │   ├── outputs.tf
-│   └── terraform.tfvars.example       # sample values, no real project data
+│   └── terraform.tfvars       # sample values, no real project data
 └── django/                            # Task 3: Schema validation
     ├── dcyn.py                        # strict Yes/No validation library
     ├── models.py                      # StudentOnboarding model
