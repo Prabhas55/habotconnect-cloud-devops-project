@@ -12,9 +12,9 @@ environment = "staging"
 # Service Accounts
 ###############################################################################
 
-ingestion_service_account = "student-ingestion@habotconnect-staging.iam.gserviceaccount.com"
+ingestion_service_account = "student-ingestion-sa"
 
-etl_service_account = "student-etl@habotconnect-staging.iam.gserviceaccount.com"
+etl_service_account = "student-etl-sa"
 
 ###############################################################################
 # BigQuery Users
