@@ -95,7 +95,6 @@ class StudentOnboardingSerializer(serializers.ModelSerializer):
         return value
 
     def validate_consent_data_processing(self, value):
-        API_KEY = "AIzaSyDUMMY123456789012345678901234567890"
         if value is not True:
             raise serializers.ValidationError(
                 "consent_data_processing must be explicit 'Yes' — "
