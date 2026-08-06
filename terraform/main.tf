@@ -23,12 +23,38 @@ provider "google" {
 }
 
 ###############################################################################
-# D0 - Raw Landing (Google Cloud Storage)
-#
-# Purpose:
-# Secure landing zone for raw student onboarding JSON payloads before
-# schema validation and downstream processing.
+# Current Project Information
 ###############################################################################
+
+data "google_project" "current" {}
+
+###############################################################################
+# Service Accounts
+###############################################################################
+
+# Uploads raw student onboarding JSON into D0.
+
+resource "google_service_account" "ingestion_sa" {
+
+  account_id   = var.ingestion_service_account
+  display_name = "Student Ingestion Service Account"
+
+  description = "Uploads raw onboarding payloads into D0 Raw Landing"
+
+}
+
+###############################################################################
+
+# Reads raw files and loads validated data into BigQuery.
+
+resource "google_service_account" "etl_sa" {
+
+  account_id   = var.etl_service_account
+  display_name = "Student ETL Service Account"
+
+  description = "Processes D0 data into D1 BigQuery"
+
+}
 
 ###############################################################################
 # Cloud KMS
@@ -47,23 +73,47 @@ resource "google_kms_crypto_key" "raw_landing_key" {
 
   key_ring = google_kms_key_ring.raw_landing_ring.id
 
-  # Rotate encryption key every 90 days
   rotation_period = "7776000s"
 
   lifecycle {
+
     prevent_destroy = true
+
   }
 
 }
 
 ###############################################################################
-# D0 Raw Landing Bucket
+# Allow Google Cloud Storage to use the KMS key
+###############################################################################
+
+resource "google_kms_crypto_key_iam_binding" "storage_kms" {
+
+  crypto_key_id = google_kms_crypto_key.raw_landing_key.id
+
+  role = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+
+  members = [
+
+    "serviceAccount:service-${data.google_project.current.number}@gs-project-accounts.iam.gserviceaccount.com"
+
+  ]
+
+}
+
+
+
+###############################################################################
+# D0 - Raw Landing Bucket (Google Cloud Storage)
+#
+# Purpose:
+# Secure landing zone for raw student onboarding JSON payloads
+# before validation and ETL processing.
 ###############################################################################
 
 resource "google_storage_bucket" "d0_raw_landing" {
 
   name     = "${var.project_id}-d0-raw-landing"
-
   location = var.region
 
   storage_class = "STANDARD"
@@ -79,7 +129,7 @@ resource "google_storage_bucket" "d0_raw_landing" {
   }
 
   ###########################################################################
-  # Versioning
+  # Enable Object Versioning
   ###########################################################################
 
   versioning {
@@ -87,7 +137,9 @@ resource "google_storage_bucket" "d0_raw_landing" {
   }
 
   ###########################################################################
-  # Lifecycle Management
+  # Lifecycle Rule
+  #
+  # Automatically delete raw payloads after 30 days.
   ###########################################################################
 
   lifecycle_rule {
@@ -118,17 +170,19 @@ resource "google_storage_bucket" "d0_raw_landing" {
 ###############################################################################
 # IAM
 #
-# Least Privilege Principle
+# Ingestion Service Account
 #
-# The ingestion service account can ONLY upload new objects under
-# the incoming/ folder.
+# Least Privilege:
 #
-# It CANNOT:
+# Can:
+#   ✓ Upload files
 #
-# - Read existing files
-# - Delete files
-# - List bucket contents
+# Cannot:
+#   ✗ Read files
+#   ✗ Delete files
+#   ✗ List bucket
 #
+# Uploads are restricted to the /incoming/ prefix only.
 ###############################################################################
 
 resource "google_storage_bucket_iam_member" "d0_writer" {
@@ -137,26 +191,29 @@ resource "google_storage_bucket_iam_member" "d0_writer" {
 
   role = "roles/storage.objectCreator"
 
-  member = "serviceAccount:${var.ingestion_service_account}"
+  member =
+    "serviceAccount:${google_service_account.ingestion_sa.email}"
 
   condition {
 
     title = "write_only_incoming"
 
-    description = "Only upload objects under incoming/"
+    description =
+      "Allow uploads only inside incoming/ folder"
 
     expression =
-    "resource.name.startsWith(\"projects/_/buckets/${google_storage_bucket.d0_raw_landing.name}/objects/incoming/\")"
+      "resource.name.startsWith(\"projects/_/buckets/${google_storage_bucket.d0_raw_landing.name}/objects/incoming/\")"
 
   }
 
 }
 
 ###############################################################################
-# ETL Read Access
+# ETL Service Account
 #
-# ETL can ONLY read raw files.
-# It cannot modify or delete them.
+# Read-only access to D0.
+#
+# ETL can read raw files but cannot modify or delete them.
 ###############################################################################
 
 resource "google_storage_bucket_iam_member" "d0_reader" {
@@ -165,17 +222,17 @@ resource "google_storage_bucket_iam_member" "d0_reader" {
 
   role = "roles/storage.objectViewer"
 
-  member = "serviceAccount:${var.etl_service_account}"
+  member =
+    "serviceAccount:${google_service_account.etl_sa.email}"
 
 }
-
 
 ###############################################################################
 # D1 - Staged / Enforced BigQuery Dataset
 #
 # Purpose:
-# Stores validated student onboarding data after schema validation
-# performed by the Django REST Framework serializer and DCYN library.
+# Stores validated student onboarding records after they pass
+# Django Serializer + DCYN validation.
 ###############################################################################
 
 resource "google_bigquery_dataset" "d1_staged_enforced" {
@@ -192,10 +249,6 @@ resource "google_bigquery_dataset" "d1_staged_enforced" {
     environment = var.environment
     managed_by  = "terraform"
   }
-
-  ###########################################################################
-  # Dataset Access
-  ###########################################################################
 
   access {
 
@@ -218,14 +271,13 @@ resource "google_bigquery_dataset" "d1_staged_enforced" {
 ###############################################################################
 # Student Onboarding Table
 #
-# Only validated records are stored here.
+# This table stores ONLY validated records.
 #
-# The Django Serializer guarantees:
+# Data entering this table has already passed:
 #
-# • Correct data types
-# • Valid phone numbers
-# • Age limits
-# • DCYN Yes/No conversion
+# • Django Serializer Validation
+# • DCYN Boolean Validation
+# • Schema Validation
 #
 ###############################################################################
 
@@ -238,23 +290,23 @@ resource "google_bigquery_table" "student_onboarding" {
   deletion_protection = true
 
   ###########################################################################
-  # Partition Table
-  #
-  # Improves performance when querying by ingestion date.
+  # Partition table by ingestion date
   ###########################################################################
 
   time_partitioning {
 
-    type = "DAY"
+    type  = "DAY"
 
     field = "ingested_at"
 
   }
 
+  # Prevent accidental full table scans
+
+  require_partition_filter = true
+
   ###########################################################################
-  # Cluster by Region
-  #
-  # Most analyst queries filter by region.
+  # Cluster table by region
   ###########################################################################
 
   clustering = [
@@ -264,7 +316,7 @@ resource "google_bigquery_table" "student_onboarding" {
   ]
 
   ###########################################################################
-  # Schema
+  # Table Schema
   ###########################################################################
 
   schema = jsonencode([
@@ -316,9 +368,9 @@ resource "google_bigquery_table" "student_onboarding" {
 }
 
 ###############################################################################
-# Analyst Region Mapping
+# Analyst Region Mapping Table
 #
-# Maps analysts to the regions they are permitted to access.
+# Maps each analyst to the region they are allowed to access.
 #
 # Example:
 #
@@ -351,19 +403,9 @@ resource "google_bigquery_table" "analyst_region_map" {
 }
 
 ###############################################################################
-# Row-Level Security (RLS)
+# Row Level Security
 #
-# Purpose:
-# Analysts should only view student records belonging to the regions
-# assigned to them.
-#
-# Example:
-#
-# analyst@company.com  →  IN-TS
-#
-# When analyst@company.com queries the student_onboarding table,
-# only records where region_code = IN-TS are returned.
-#
+# Analysts can only view students belonging to their assigned region.
 ###############################################################################
 
 resource "google_bigquery_row_access_policy" "region_scoped_access" {
@@ -385,7 +427,10 @@ region_code IN (
 EOF
 
   grantees = [
+
     "user:${var.analytics_reader_email}"
+
   ]
 
 }
+
