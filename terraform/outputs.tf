@@ -37,3 +37,10 @@ output "kms_key" {
   value = google_kms_crypto_key.raw_landing_key.id
 
 }
+output "ingestion_service_account_email" {
+  value = google_service_account.ingestion_sa.email
+}
+
+output "etl_service_account_email" {
+  value = google_service_account.etl_sa.email
+}
