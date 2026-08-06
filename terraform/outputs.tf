@@ -1,14 +1,39 @@
 output "d0_bucket_name" {
-  description = "Name of the D0 raw landing GCS bucket"
-  value       = google_storage_bucket.d0_raw_landing.name
+
+  description = "Raw Landing Bucket"
+
+  value = google_storage_bucket.d0_raw_landing.name
+
 }
 
-output "d1_dataset_id" {
-  description = "BigQuery dataset ID for the D1 staged/enforced layer"
-  value       = google_bigquery_dataset.d1_staged_enforced.dataset_id
+output "d1_dataset" {
+
+  description = "Validated BigQuery Dataset"
+
+  value = google_bigquery_dataset.d1_staged_enforced.dataset_id
+
 }
 
-output "student_onboarding_table_fqn" {
-  description = "Fully-qualified BigQuery table name for student_onboarding"
-  value       = "${var.project_id}.${google_bigquery_dataset.d1_staged_enforced.dataset_id}.${google_bigquery_table.student_onboarding.table_id}"
+output "student_table" {
+
+  description = "Student Onboarding Table"
+
+  value = google_bigquery_table.student_onboarding.table_id
+
+}
+
+output "analyst_mapping_table" {
+
+  description = "Analyst Region Mapping Table"
+
+  value = google_bigquery_table.analyst_region_map.table_id
+
+}
+
+output "kms_key" {
+
+  description = "Customer Managed Encryption Key"
+
+  value = google_kms_crypto_key.raw_landing_key.id
+
 }
